@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>教师作业批改助手</title>
+<style>
+  :root {
+    --primary: #4f46e5;
+    --primary-light: #818cf8;
+    --primary-bg: #eef2ff;
+    --bg: #f1f5f9;
+    --card: #ffffff;
+    --text: #1e293b;
+    --text2: #64748b;
+    --text3: #94a3b8;
+    --border: #e2e8f0;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --error: #ef4444;
+    --radius: 14px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  /* ===== Header ===== */
+  .header {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
+    color: white;
+    padding: 32px 20px 28px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 60%);
+    animation: pulse 6s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+  .header h1 { font-size: 30px; font-weight: 800; margin-bottom: 6px; position: relative; }
+  .header p { opacity: 0.85; font-size: 15px; position: relative; }
+
+  /* ===== Top Config Bar ===== */
+  .config-bar {
+    background: white;
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    box-shadow: var(--shadow);
+  }
+  .config-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .config-item label {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text2);
+    white-space: nowrap;
+  }
+  .config-item select {
+    padding: 7px 14px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+    background: white;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    min-width: 180px;
+  }
+  .config-item select:focus { outline: none; border-color: var(--primary); }
+
+  /* ===== Container ===== */
+  .container { max-width: 960px; margin: 0 auto; padding: 24px 20px 60px; }
+
+  /* ===== Tabs ===== */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 24px;
+    background: white;
+    border-radius: var(--radius);
+    padding: 6px;
+    box-shadow: var(--shadow);
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 14px 20px;
+    border: none;
+    background: transparent;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text2);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.25s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .tab-btn:hover { background: #f8fafc; color: var(--text); }
+  .tab-btn.active {
+    background: var(--primary);
+    color: white;
+    box-shadow: 0 2px 10px rgba(79,70,229,0.35);
+  }
+  .tab-icon { font-size: 18px; }
+
+  /* ===== Card ===== */
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 28px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+  }
+
+  /* ===== Form Elements ===== */
+  label.field-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+    font-size: 14px;
+    color: var(--text);
+  }
+  label.field-label .hint {
+    font-weight: 400;
+    color: var(--text3);
+    font-size: 12px;
+  }
+  textarea {
+    width: 100%;
+    padding: 14px 16px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    font-size: 14px;
+    font-family: inherit;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    resize: vertical;
+    line-height: 1.7;
+  }
+  textarea:focus {
+    outline: none;
+    border-color: var(--primary-light);
+    box-shadow: 0 0 0 3px rgba(129,140,248,0.15);
+  }
+  textarea.main-input { min-height: 260px; }
+  textarea.small-input { min-height: 80px; }
+  .field-group { margin-bottom: 20px; }
+  .field-hint { font-size: 12px; color: var(--text3); margin-top: 4px; }
+
+  /* ===== Upload Bar ===== */
+  .upload-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+  .upload-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    background: #f0f4ff;
+    border: 2px dashed #c7d2fe;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--primary);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .upload-btn:hover {
+    background: #e0e7ff;
+    border-color: var(--primary-light);
+  }
+  .upload-hint {
+    font-size: 12px;
+    color: var(--text3);
+  }
+  .upload-status {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--success);
+  }
+  .upload-status.error {
+    color: var(--error);
+  }
+
+  /* ===== Collapsible Section ===== */
+  .collapse-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 0;
+    cursor: pointer;
+    user-select: none;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text2);
+    transition: color 0.2s;
+  }
+  .collapse-header:hover { color: var(--primary); }
+  .collapse-header .arrow {
+    transition: transform 0.2s;
+    font-size: 12px;
+  }
+  .collapse-header.open .arrow { transform: rotate(90deg); }
+  .collapse-body {
+    display: none;
+    padding-top: 4px;
+  }
+  .collapse-body.open { display: block; }
+
+  /* ===== Button ===== */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 15px 32px;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s;
+    width: 100%;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: white;
+    box-shadow: 0 4px 14px rgba(79,70,229,0.35);
+  }
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(79,70,229,0.45);
+  }
+  .btn-primary:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* ===== Loading ===== */
+  .loading { display: none; text-align: center; padding: 48px 20px; }
+  .loading.show { display: block; }
+  .spinner {
+    width: 44px; height: 44px;
+    border: 4px solid var(--border);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading p { color: var(--text2); font-size: 14px; }
+
+  /* ===== Error ===== */
+  .error-box {
+    margin-top: 16px;
+    padding: 14px 18px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+    color: var(--error);
+    font-size: 14px;
+    display: none;
+  }
+  .error-box.show { display: block; }
+
+  /* ===== Result ===== */
+  .result-box {
+    margin-top: 24px;
+    padding: 28px;
+    background: #fafbff;
+    border-radius: var(--radius);
+    border: 1px solid #e0e7ff;
+    display: none;
+    line-height: 1.8;
+  }
+  .result-box.show { display: block; }
+  .result-box h1, .result-box h2, .result-box h3, .result-box h4 {
+    color: var(--primary);
+    margin-top: 20px;
+    margin-bottom: 10px;
+  }
+  .result-box h1:first-child, .result-box h2:first-child, .result-box h3:first-child { margin-top: 0; }
+  .result-box h2 { font-size: 20px; border-bottom: 2px solid var(--primary-bg); padding-bottom: 8px; }
+  .result-box h3 { font-size: 17px; }
+  .result-box h4 { font-size: 15px; }
+  .result-box ul, .result-box ol { padding-left: 22px; margin-bottom: 12px; }
+  .result-box li { margin-bottom: 6px; }
+  .result-box p { margin-bottom: 10px; }
+  .result-box strong { color: #4338ca; }
+  .result-box blockquote {
+    border-left: 4px solid var(--primary-light);
+    padding: 10px 18px;
+    margin: 14px 0;
+    background: var(--primary-bg);
+    border-radius: 0 10px 10px 0;
+    font-style: italic;
+  }
+  .result-box code {
+    background: #e2e8f0;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+  .result-box pre {
+    background: #1e293b;
+    color: #e2e8f0;
+    padding: 18px;
+    border-radius: 10px;
+    overflow-x: auto;
+    margin: 14px 0;
+  }
+  .result-box table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0;
+    font-size: 14px;
+    table-layout: fixed;
+  }
+  .result-box th, .result-box td {
+    border: 1px solid var(--border);
+    padding: 10px 14px;
+    text-align: left;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    vertical-align: top;
+  }
+  .result-box th {
+    background: var(--primary-bg);
+    font-weight: 700;
+    color: var(--primary);
+    white-space: nowrap;
+  }
+  .result-box tr:nth-child(even) { background: #f8fafc; }
+  .result-box colgroup col { transition: width 0.2s; }
+  .result-box td strong { color: #4338ca; }
+  .result-meta {
+    margin-top: 20px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--text3);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* ===== Tab Panels ===== */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 640px) {
+    .header h1 { font-size: 22px; }
+    .container { padding: 16px 12px 40px; }
+    .card { padding: 20px 16px; }
+    .config-bar { gap: 12px; }
+    .config-item select { min-width: 140px; }
+    .result-box { padding: 20px 16px; }
+    .result-box table { font-size: 12px; }
+    .result-box th, .result-box td { padding: 6px 8px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📝 教师作业批改助手</h1>
+  <p>AI 智能批改 · 多维评分 · 学情分析 · 三科覆盖</p>
+</div>
+
+<div class="config-bar">
+  <div class="config-item">
+    <label>📚 学科</label>
+    <select id="globalSubject" onchange="updateSubject()">
+      {% for s in subjects %}
+      <option value="{{ s }}">{{ s }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="config-item">
+    <label>🤖 模型</label>
+    <select id="globalModel">
+      {% for key, name in models.items() %}
+      <option value="{{ key }}">{{ name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</div>
+
+<div class="container">
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('grade',this)">
+      <span class="tab-icon">📝</span> 作业批改
+    </button>
+    <button class="tab-btn" onclick="switchTab('analyze',this)">
+      <span class="tab-icon">📊</span> 学情分析
+    </button>
+  </div>
+
+  <!-- ==================== 作业批改 ==================== -->
+  <div id="panel-grade" class="tab-panel active">
+    <div class="card">
+      <div class="field-group">
+        <label class="field-label">
+          📄 粘贴学生作业内容 <span class="hint">（包含题目和完整作答内容）</span>
+        </label>
+        <textarea id="gradeContent" class="main-input" placeholder="在此粘贴学生作业内容...&#10;&#10;例如作文：&#10;题目：那一刻，我长大了&#10;&#10;每个人的成长都有一个转折点...&#10;&#10;或者数学作业：&#10;1. 解方程 3x + 5 = 20&#10;解：3x = 20 - 5..."></textarea>
+        <div class="upload-bar">
+          <label class="upload-btn">
+            📎 上传作业文档
+            <input type="file" accept=".txt,.pdf,.docx,.doc,.md" onchange="handleFileUpload(this, 'gradeContent')" hidden>
+          </label>
+          <span class="upload-hint">支持 .txt / .pdf / .docx / .md 格式</span>
+          <span class="upload-status" id="gradeUploadStatus"></span>
+        </div>
+      </div>
+
+      <!-- 可选高级设置 -->
+      <div class="collapse-header" onclick="toggleCollapse(this)">
+        <span class="arrow">▶</span> ⚙️ 高级设置（可选）
+      </div>
+      <div class="collapse-body">
+        <div class="field-group">
+          <label class="field-label">🎭 自定义角色设定 <span class="hint">（留空使用默认学科专家角色）</span></label>
+          <textarea id="gradeRole" class="small-input" placeholder="例如：你是一位耐心温柔的小学语文老师，善于用鼓励的方式指出学生的问题..."></textarea>
+        </div>
+        <div class="field-group">
+          <label class="field-label">📌 自定义评价要求 <span class="hint">（留空使用默认评分标准）</span></label>
+          <textarea id="gradeCustom" class="small-input" placeholder="例如：&#10;- 重点关注文章的开头是否吸引人&#10;- 需要检查标点符号使用是否规范&#10;- 特别关注解题过程的书写规范性"></textarea>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="gradeBtn" onclick="doGrade()">
+        🚀 开始批改
+      </button>
+
+      <div class="error-box" id="gradeError"></div>
+      <div class="loading" id="gradeLoading">
+        <div class="spinner"></div>
+        <p>AI 老师正在认真批改中，请稍候...</p>
+      </div>
+      <div class="result-box" id="gradeResult"></div>
+    </div>
+  </div>
+
+  <!-- ==================== 学情分析 ==================== -->
+  <div id="panel-analyze" class="tab-panel">
+    <div class="card">
+      <div class="field-group">
+        <label class="field-label">
+          📊 粘贴学生作业数据 <span class="hint">（多份作业，每份用【学生姓名】标记）</span>
+        </label>
+        <textarea id="analyzeContent" class="main-input" placeholder="按以下格式输入多名学生的作业：&#10;&#10;【张三】&#10;学生作业内容...&#10;&#10;【李四】&#10;学生作业内容...&#10;&#10;【王五】&#10;学生作业内容...&#10;&#10;建议输入3份以上，分析效果更佳。" style="min-height:300px"></textarea>
+        <div class="upload-bar">
+          <label class="upload-btn">
+            📎 上传作业文档
+            <input type="file" accept=".txt,.pdf,.docx,.doc,.md" onchange="handleFileUpload(this, 'analyzeContent')" hidden>
+          </label>
+          <span class="upload-hint">支持 .txt / .pdf / .docx / .md 格式</span>
+          <span class="upload-status" id="analyzeUploadStatus"></span>
+        </div>
+      </div>
+
+      <!-- 可选高级设置 -->
+      <div class="collapse-header" onclick="toggleCollapse(this)">
+        <span class="arrow">▶</span> ⚙️ 高级设置（可选）
+      </div>
+      <div class="collapse-body">
+        <div class="field-group">
+          <label class="field-label">🎭 自定义角色设定 <span class="hint">（留空使用默认角色）</span></label>
+          <textarea id="analyzeRole" class="small-input" placeholder="例如：你是一位擅长数据分析的教研组长..."></textarea>
+        </div>
+        <div class="field-group">
+          <label class="field-label">📌 自定义分析要求 <span class="hint">（留空使用默认分析维度）</span></label>
+          <textarea id="analyzeCustom" class="small-input" placeholder="例如：&#10;- 重点关注学生的审题能力&#10;- 分析计算错误的类型分布&#10;- 给出分层作业布置建议"></textarea>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="analyzeBtn" onclick="doAnalyze()">
+        📊 开始分析
+      </button>
+
+      <div class="error-box" id="analyzeError"></div>
+      <div class="loading" id="analyzeLoading">
+        <div class="spinner"></div>
+        <p>AI 正在分析学情数据，请稍候...</p>
+      </div>
+      <div class="result-box" id="analyzeResult"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== Tab switching =====
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ===== Collapsible =====
+function toggleCollapse(header) {
+  header.classList.toggle('open');
+  header.nextElementSibling.classList.toggle('open');
+}
+
+// ===== File Upload =====
+async function handleFileUpload(input, targetId) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const statusId = targetId === 'gradeContent' ? 'gradeUploadStatus' : 'analyzeUploadStatus';
+  const statusEl = document.getElementById(statusId);
+  statusEl.textContent = '正在解析文件...';
+  statusEl.className = 'upload-status';
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    const resp = await fetch('/api/upload', { method: 'POST', body: formData });
+    const data = await resp.json();
+
+    if (data.error) {
+      statusEl.textContent = '❌ ' + data.error;
+      statusEl.className = 'upload-status error';
+    } else {
+      const textarea = document.getElementById(targetId);
+      // 追加到现有内容后面，不覆盖
+      if (textarea.value.trim()) {
+        textarea.value += '\n\n' + data.text;
+      } else {
+        textarea.value = data.text;
+      }
+      statusEl.textContent = '✅ 已导入 ' + data.filename + '（' + data.length + ' 字）';
+      statusEl.className = 'upload-status';
+    }
+  } catch (e) {
+    statusEl.textContent = '❌ 上传失败：' + e.message;
+    statusEl.className = 'upload-status error';
+  }
+  // 清空 input 允许重复上传同一文件
+  input.value = '';
+}
+
+// ===== Subject change placeholder =====
+function updateSubject() {
+  const s = document.getElementById('globalSubject').value;
+  const placeholders = {
+    '语文': '在此粘贴学生作文内容...\n\n例如：\n题目：那一刻，我长大了\n\n每个人的成长都有一个转折点...',
+    '数学': '在此粘贴学生数学作业...\n\n例如：\n1. 解方程 3x + 5 = 20\n解：3x = 20 - 5\n3x = 15\nx = 5',
+    '英语': '在此粘贴学生英语作业...\n\n例如：\nMy Summer Vacation\nLast summer, I went to Beijing with my family...'
+  };
+  document.getElementById('gradeContent').placeholder = placeholders[s] || placeholders['语文'];
+}
+
+// ===== Markdown to HTML =====
+function md2html(md) {
+  // Step 0: Extract and protect tables from other replacements
+  const tables = [];
+  let text = md.replace(/(?:^\|.+\|$\n?)+/gm, function(block) {
+    const lines = block.trim().split('\n').filter(l => l.trim());
+    const rows = [];
+    for (const line of lines) {
+      const cells = line.split('|').filter((c, i, arr) => i > 0 && i < arr.length - 1);
+      if (cells.every(c => /^[\s\-:]+$/.test(c))) continue; // separator row
+      rows.push(cells.map(c => c.trim()));
+    }
+    if (rows.length === 0) return '';
+    const idx = tables.length;
+    tables.push({ rows });
+    return '\n__TABLE_' + idx + '__\n';
+  });
+
+  // Step 1: Apply inline markdown
+  text = text
+    // headers
+    .replace(/^#### (.+)$/gm, '<h4>$1</h4>')
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+    // bold
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    // italic
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    // code blocks
+    .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+    // inline code
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    // blockquote
+    .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
+    // unordered list
+    .replace(/^[*-] (.+)$/gm, '<li>$1</li>')
+    // ordered list
+    .replace(/^\d+\.\s(.+)$/gm, '<li>$1</li>');
+
+  // Step 2: paragraphs and line breaks
+  text = text
+    .replace(/\n\n+/g, '</p><p>')
+    .replace(/\n/g, '<br>');
+
+  // Step 3: Rebuild tables with proper structure
+  for (let i = 0; i < tables.length; i++) {
+    const t = tables[i];
+    const colCount = Math.max(...t.rows.map(r => r.length));
+    // calculate column widths based on content
+    const colWidths = new Array(colCount).fill(0);
+    for (const row of t.rows) {
+      for (let j = 0; j < row.length; j++) {
+        colWidths[j] = Math.max(colWidths[j], row[j].length);
+      }
+    }
+    const totalLen = colWidths.reduce((a, b) => a + b, 0) || 1;
+
+    let tableHtml = '<table><colgroup>';
+    for (let j = 0; j < colCount; j++) {
+      const pct = Math.max(8, Math.round((colWidths[j] / totalLen) * 100));
+      tableHtml += '<col style="width:' + pct + '%">';
+    }
+    tableHtml += '</colgroup>';
+
+    // header row
+    if (t.rows.length > 0) {
+      tableHtml += '<thead><tr>';
+      for (const cell of t.rows[0]) {
+        tableHtml += '<th>' + cell + '</th>';
+      }
+      // fill missing cells
+      for (let j = t.rows[0].length; j < colCount; j++) {
+        tableHtml += '<th></th>';
+      }
+      tableHtml += '</tr></thead>';
+    }
+
+    // body rows
+    if (t.rows.length > 1) {
+      tableHtml += '<tbody>';
+      for (let r = 1; r < t.rows.length; r++) {
+        tableHtml += '<tr>';
+        for (const cell of t.rows[r]) {
+          tableHtml += '<td>' + cell + '</td>';
+        }
+        for (let j = t.rows[r].length; j < colCount; j++) {
+          tableHtml += '<td></td>';
+        }
+        tableHtml += '</tr>';
+      }
+      tableHtml += '</tbody>';
+    }
+    tableHtml += '</table>';
+
+    text = text.replace('__TABLE_' + i + '__', tableHtml);
+  }
+
+  // Step 4: Wrap consecutive <li> in <ul>
+  text = text.replace(/(<li>[\s\S]*?<\/li>)/g, function(match) {
+    return '<ul>' + match + '</ul>';
+  });
+  text = text.replace(/<\/ul>\s*<ul>/g, '');
+
+  // Step 5: Wrap consecutive <blockquote> together
+  text = text.replace(/(<blockquote>.*?<\/blockquote>)/gs, function(match) {
+    return match.replace(/<\/blockquote>\s*<blockquote>/g, '<br>');
+  });
+
+  // Step 6: Clean up empty paragraphs and unwrap block elements from <p>
+  text = text.replace(/<p>\s*<\/p>/g, '');
+  text = text.replace(/<p>(<h[1-4]>)/g, '$1');
+  text = text.replace(/(<\/h[1-4]>)<\/p>/g, '$1');
+  text = text.replace(/<p>(<table[\s\S]*?<\/table>)/g, '$1');
+  text = text.replace(/(<\/table>)<\/p>/g, '$1');
+  text = text.replace(/<p>(<ul>)/g, '$1');
+  text = text.replace(/(<\/ul>)<\/p>/g, '$1');
+  text = text.replace(/<p>(<blockquote>)/g, '$1');
+  text = text.replace(/(<\/blockquote>)<\/p>/g, '$1');
+  text = text.replace(/<p>(<pre>)/g, '$1');
+  text = text.replace(/(<\/pre>)<\/p>/g, '$1');
+  text = text.replace(/<p>(<colgroup>)/g, '$1');
+  text = text.replace(/(<\/colgroup>)<\/p>/g, '$1');
+
+  return '<p>' + text + '</p>';
+}
+
+// ===== Grade =====
+async function doGrade() {
+  const model = document.getElementById('globalModel').value;
+  const subject = document.getElementById('globalSubject').value;
+  const content = document.getElementById('gradeContent').value;
+  const custom_requirement = document.getElementById('gradeCustom').value;
+  const custom_role = document.getElementById('gradeRole').value;
+
+  if (!content.trim()) { showError('gradeError', '请输入学生作业内容'); return; }
+
+  const btn = document.getElementById('gradeBtn');
+  btn.disabled = true;
+  hideError('gradeError');
+  hideResult('gradeResult');
+  showLoading('gradeLoading');
+
+  try {
+    const resp = await fetch('/api/grade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model, subject, content, custom_requirement, custom_role })
+    });
+    const data = await resp.json();
+    hideLoading('gradeLoading');
+    btn.disabled = false;
+    if (data.error) { showError('gradeError', data.error); }
+    else { showResult('gradeResult', data.result, data.model, subject); }
+  } catch (e) {
+    hideLoading('gradeLoading');
+    btn.disabled = false;
+    showError('gradeError', '网络错误: ' + e.message);
+  }
+}
+
+// ===== Analyze =====
+async function doAnalyze() {
+  const model = document.getElementById('globalModel').value;
+  const subject = document.getElementById('globalSubject').value;
+  const content = document.getElementById('analyzeContent').value;
+  const custom_requirement = document.getElementById('analyzeCustom').value;
+  const custom_role = document.getElementById('analyzeRole').value;
+
+  if (!content.trim()) { showError('analyzeError', '请输入学生作业数据'); return; }
+
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = true;
+  hideError('analyzeError');
+  hideResult('analyzeResult');
+  showLoading('analyzeLoading');
+
+  try {
+    const resp = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model, subject, content, custom_requirement, custom_role })
+    });
+    const data = await resp.json();
+    hideLoading('analyzeLoading');
+    btn.disabled = false;
+    if (data.error) { showError('analyzeError', data.error); }
+    else { showResult('analyzeResult', data.result, data.model, subject); }
+  } catch (e) {
+    hideLoading('analyzeLoading');
+    btn.disabled = false;
+    showError('analyzeError', '网络错误: ' + e.message);
+  }
+}
+
+// ===== UI Helpers =====
+function showLoading(id) { document.getElementById(id).classList.add('show'); }
+function hideLoading(id) { document.getElementById(id).classList.remove('show'); }
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = '⚠️ ' + msg;
+  el.classList.add('show');
+}
+function hideError(id) { document.getElementById(id).classList.remove('show'); }
+function hideResult(id) { document.getElementById(id).classList.remove('show'); }
+
+function showResult(id, markdown, modelName, subject) {
+  const el = document.getElementById(id);
+  const now = new Date().toLocaleString('zh-CN', { hour12: false });
+  el.innerHTML = md2html(markdown) +
+    '<div class="result-meta">' +
+    '<span>📚 ' + subject + ' · 🤖 ' + modelName + '</span>' +
+    '<span>🕐 ' + now + '</span>' +
+    '</div>';
+  el.classList.add('show');
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+</script>
+
+</body>
+</html>
